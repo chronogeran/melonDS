@@ -919,9 +919,9 @@ bool LoadGBAROM(const u8* romdata, u32 filelength, const char *filename, const c
     }
 }
 
-void LoadBIOS()
+void LoadBIOS(bool discard)
 {
-    Reset();
+    Reset(discard);
     Running = true;
 }
 
