@@ -4243,7 +4243,7 @@ void ARM7IOWrite32(u32 addr, u32 val)
     printf("unknown ARM7 IO write32 %08X %08X %08X\n", addr, val, ARM7->R[15]);
 }
 
-void GetRegs(int regs[][])
+void GetRegs(int** regs)
 {
     ARM* cpus[2] { (ARM*)ARM7, (ARM*)ARM9 };
     for (int i = 0; i < 2; i++)
