@@ -4245,12 +4245,12 @@ void ARM7IOWrite32(u32 addr, u32 val)
 
 void GetRegs(int** regs)
 {
-    ARM* cpus[2] { (ARM*)ARM7, (ARM*)ARM9 };
+    ARM* cpus[2] { (ARM*)ARM9, (ARM*)ARM7 };
     for (int i = 0; i < 2; i++)
     {
         for (int j = 0; j < 15; j++)
         {
-            regs[i][j] = cpus[i]->R[j];
+            regs[i * 15 + j] = cpus[i]->R[j];
         }
     }
 }
