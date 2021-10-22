@@ -4248,9 +4248,9 @@ void GetRegs(int* regs)
     ARM* cpus[2] { (ARM*)ARM9, (ARM*)ARM7 };
     for (int i = 0; i < 2; i++)
     {
-        for (int j = 0; j < 15; j++)
+        for (int j = 0; j < 16; j++)
         {
-            regs[i * 15 + j] = cpus[i]->R[j];
+            regs[i * 16 + j] = cpus[i]->R[j];
         }
     }
 }
