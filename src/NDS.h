@@ -313,8 +313,8 @@ void ARM7IOWrite8(u32 addr, u8 val);
 void ARM7IOWrite16(u32 addr, u16 val);
 void ARM7IOWrite32(u32 addr, u32 val);
 
-void GetRegs(int* regs);
-void SetReg(int ncpu, int index, int val);
+void GetRegs(u32* regs);
+void SetReg(s32 ncpu, s32 index, s32 val);
 
 }
 

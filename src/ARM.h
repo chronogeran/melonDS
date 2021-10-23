@@ -38,6 +38,8 @@ enum
 const u32 ITCMPhysicalSize = 0x8000;
 const u32 DTCMPhysicalSize = 0x4000;
 
+extern void (*TraceCallback)(u32 cpu, u32* regs, u32 opcode, s64 ccoffset);
+
 class ARM
 {
 public:
