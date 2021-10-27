@@ -57,9 +57,9 @@ time_t (*RtcCallback)() = NULL;
 
 bool Init()
 {
-    time_t timeAtBoot = (u32)Config::TimeAtBoot;
     if (Config::FixedBootTime)
     {
+        time_t timeAtBoot = (u32)Config::TimeAtBoot;
         if (Config::UseRealTime)
         {
             struct tm dateAtBoot;
@@ -216,7 +216,7 @@ void ByteIn(u8 val)
                     Output[1] = BCD(timedata.tm_mon + 1);
                     Output[2] = BCD(timedata.tm_mday);
                     Output[3] = BCD(timedata.tm_wday);
-                    Output[4] = BCD(timedata.tm_hour);
+                    Output[4] = BCD(timedata.tm_hour) | ((timedata.tm_hour > 11) * 0x40);
                     Output[5] = BCD(timedata.tm_min);
                     Output[6] = BCD(timedata.tm_sec);
                 }
@@ -226,7 +226,7 @@ void ByteIn(u8 val)
                 {
                     struct tm timedata = GetDate();
 
-                    Output[0] = BCD(timedata.tm_hour);
+                    Output[0] = BCD(timedata.tm_hour) | ((timedata.tm_hour > 11) * 0x40);
                     Output[1] = BCD(timedata.tm_min);
                     Output[2] = BCD(timedata.tm_sec);
                 }
