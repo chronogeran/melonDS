@@ -1195,7 +1195,7 @@ bool RunFrameStep()
         }
     }
 
-    return !stepFrame;
+    return stepFrame;
 }
 
 bool RunFrameStep()
