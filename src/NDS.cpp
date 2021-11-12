@@ -1129,6 +1129,7 @@ void PreFrameStep()
     if (Running && !(CPUStop & 0x40000000)) GPU::StartFrame();
 }
 
+template <int ConsoleType>
 bool RunFrameStep()
 {
     bool stepFrame = Running && !(CPUStop & 0x40000000) && GPU::TotalScanlines==0;
@@ -1195,6 +1196,13 @@ bool RunFrameStep()
     }
 
     return !stepFrame;
+}
+
+bool RunFrameStep()
+{
+    return NDS::ConsoleType == 1
+        ? RunFrameStep<1>()
+        : RunFrameStep<0>();
 }
 
 void PostFrameStep()
