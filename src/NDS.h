@@ -238,7 +238,7 @@ u32 RunFrame();
 
 void PreFrameStep();
 bool RunFrameStep();
-void PostFrameStep();
+int PostFrameStep();
 
 void TouchScreen(u16 x, u16 y);
 void ReleaseScreen();

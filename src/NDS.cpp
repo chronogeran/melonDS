@@ -1205,7 +1205,7 @@ bool RunFrameStep()
         : RunFrameStep<0>();
 }
 
-void PostFrameStep()
+int PostFrameStep()
 {
     bool ranFrame = Running && !(CPUStop & 0x40000000);
     if (ranFrame)
