@@ -236,6 +236,10 @@ void RelocateSave(const char* path, bool write);
 
 u32 RunFrame();
 
+void PreFrameStep();
+bool RunFrameStep();
+void PostFrameStep();
+
 void TouchScreen(u16 x, u16 y);
 void ReleaseScreen();
 

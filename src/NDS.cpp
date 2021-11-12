@@ -1122,6 +1122,102 @@ u32 RunFrame()
             : RunFrame<false, 0>();
 }
 
+void PreFrameStep()
+{
+    FrameStartTimestamp = SysTimestamp;
+    LagFrameFlag = true;
+    if (Running && !(CPUStop & 0x40000000)) GPU::StartFrame();
+}
+
+bool RunFrameStep()
+{
+    bool stepFrame = Running && !(CPUStop & 0x40000000) && GPU::TotalScanlines==0;
+    if (stepFrame)
+    {
+        u64 target = NextTarget();
+        ARM9Target = target << ARM9ClockShift;
+        CurCPU = 0;
+
+        if (CPUStop & 0x80000000)
+        {
+            // GXFIFO stall
+            s32 cycles = GPU3D::CyclesToRunFor();
+
+            ARM9Timestamp = std::min(ARM9Target, ARM9Timestamp+(cycles<<ARM9ClockShift));
+        }
+        else if (CPUStop & 0x0FFF)
+        {
+            DMAs[0]->Run<ConsoleType>();
+            if (!(CPUStop & 0x80000000)) DMAs[1]->Run<ConsoleType>();
+            if (!(CPUStop & 0x80000000)) DMAs[2]->Run<ConsoleType>();
+            if (!(CPUStop & 0x80000000)) DMAs[3]->Run<ConsoleType>();
+            if (ConsoleType == 1) DSi::RunNDMAs(0);
+        }
+        else
+        {
+            ARM9->Execute();
+        }
+
+        RunTimers(0);
+        GPU3D::Run();
+
+        target = ARM9Timestamp >> ARM9ClockShift;
+        CurCPU = 1;
+
+        if (ARM7Timestamp < target)
+        {
+            ARM7Target = target; // might be changed by a reschedule
+
+            if (CPUStop & 0x0FFF0000)
+            {
+                DMAs[4]->Run<ConsoleType>();
+                DMAs[5]->Run<ConsoleType>();
+                DMAs[6]->Run<ConsoleType>();
+                DMAs[7]->Run<ConsoleType>();
+                if (ConsoleType == 1) DSi::RunNDMAs(1);
+            }
+            else
+            {
+                ARM7->Execute();
+            }
+
+            RunTimers(1);
+        }
+
+        RunSystem(target);
+
+        if (CPUStop & 0x40000000)
+        {
+            // checkme: when is sleep mode effective?
+            CancelEvent(Event_LCD);
+            GPU::TotalScanlines = 263;
+        }
+    }
+
+    return !stepFrame;
+}
+
+void PostFrameStep()
+{
+    bool ranFrame = Running && !(CPUStop & 0x40000000);
+    if (ranFrame)
+    {
+        SPU::TransferOutput();
+        NDSCart::FlushSRAMFile();
+    }
+
+    // In the context of TASes, frame count is traditionally the primary measure of emulated time,
+    // so it needs to be tracked even if NDS is powered off.
+    NumFrames++;
+    if (LagFrameFlag)
+        NumLagFrames++;
+
+    if (ranFrame)
+        return GPU::TotalScanlines;
+    else
+        return 263;
+}
+
 void Reschedule(u64 target)
 {
     if (CurCPU == 0)
