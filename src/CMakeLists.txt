@@ -11,7 +11,6 @@ add_library(core STATIC
 	ARMInterpreter_ALU.cpp
 	ARMInterpreter_Branch.cpp
 	ARMInterpreter_LoadStore.cpp
-	Config.cpp
 	CP15.cpp
 	CRC32.cpp
 	DMA.cpp
@@ -37,7 +36,6 @@ add_library(core STATIC
 	melonDLDI.h
 	NDS.cpp
 	NDSCart.cpp
-	NDSCart_SRAMManager.cpp
 	Platform.h
 	ROMList.h
 	FreeBIOS.h
@@ -131,6 +129,8 @@ if (ENABLE_OGLRENDERER)
 else()
 	if (WIN32)
 		target_link_libraries(core ole32 comctl32 ws2_32)
+	elseif (APPLE)
+		target_link_libraries(core)
 	else()
 		target_link_libraries(core rt)
 	endif()

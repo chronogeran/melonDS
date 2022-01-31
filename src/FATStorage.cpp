@@ -1,5 +1,5 @@
 /*
-    Copyright 2016-2021 Arisotura
+    Copyright 2016-2022 melonDS team
 
     This file is part of melonDS.
 
@@ -103,7 +103,6 @@ bool FATStorage::InjectFile(std::string path, u8* data, u32 len)
     u32 nwrite;
     f_write(&file, data, len, &nwrite);
     f_close(&file);
-    printf("burped hard: %d/%d\n", nwrite, len);
 
     f_unmount("0:");
     ff_disk_close();

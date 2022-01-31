@@ -1,5 +1,5 @@
 /*
-    Copyright 2016-2021 Arisotura
+    Copyright 2016-2022 melonDS team
 
     This file is part of melonDS.
 
@@ -28,6 +28,7 @@ void SetupDirectBoot(bool dsi);
 
 u32 FixFirmwareLength(u32 originalLength);
 
+u32 GetFirmwareLength();
 u8 GetConsoleType();
 u8 GetWifiVersion();
 u8 GetNWifiVersion();
@@ -54,7 +55,7 @@ extern u16 Cnt;
 
 bool Init();
 void DeInit();
-void Reset(bool discard = true);
+void Reset();
 void DoSavestate(Savestate* file);
 
 void WriteCnt(u16 val);
