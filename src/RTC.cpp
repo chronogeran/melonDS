@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "Config.h"
+#include "Platform.h"
 #include "NDS.h"
 #include "RTC.h"
 
@@ -71,7 +71,7 @@ bool Init()
     else
     {
         BaseTime = time(NULL) - GetTime();
-        if (!Platform::GetConfigBool(UseRealTime))
+        if (!Platform::GetConfigBool(Platform::UseRealTime))
         {
             struct tm date;
             localtime_r(&BaseTime, &date);

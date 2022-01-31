@@ -254,6 +254,15 @@ void CartCommon::LoadSave(const u8* savedata, u32 savelen)
 {
 }
 
+void CartCommon::GetSaveData(u8* buffer)
+{
+}
+
+u32 CartCommon::GetSaveLen()
+{
+    return 0;
+}
+
 int CartCommon::ROMCommandStart(u8* cmd, u8* data, u32 len)
 {
     if (CmdEncMode == 0)
@@ -480,6 +489,16 @@ void CartRetail::SetupSave(u32 type)
     case 10: SRAMType = 4; break; // NAND
     default: SRAMType = 0; break; // ...whatever else
     }
+}
+
+void CartRetail::GetSaveData(u8* buffer)
+{
+    memcpy(buffer, SRAM, SRAMLength);
+}
+
+u32 CartRetail::GetSaveLen()
+{
+    return SRAMLength;
 }
 
 void CartRetail::LoadSave(const u8* savedata, u32 savelen)
@@ -1453,11 +1472,6 @@ void DeInit()
 void Reset()
 {
     ResetCart();
-}
-
-void SetupDirectBoot()
-{
-    if (Cart) Cart->SetupDirectBoot();
 }
 
 void DoSavestate(Savestate* file)

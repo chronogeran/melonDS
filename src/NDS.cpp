@@ -108,8 +108,8 @@ u32 SchedListMask;
 
 u32 CPUStop;
 
-u8 ARM9BIOS[0x1000];
-u8 ARM7BIOS[0x4000];
+ECL_INVISIBLE u8 ARM9BIOS[0x1000];
+ECL_INVISIBLE u8 ARM7BIOS[0x4000];
 
 u8* MainRAM;
 u32 MainRAMMask;
@@ -499,8 +499,6 @@ void SetupDirectBoot(std::string romname)
     SPU::SetBias(0x200);
 
     SetWifiWaitCnt(0x0030);
-
-    NDSCart::SetupDirectBoot();
 }
 
 void Reset()

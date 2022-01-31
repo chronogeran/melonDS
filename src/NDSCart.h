@@ -51,6 +51,9 @@ public:
 
     virtual u8 SPIWrite(u8 val, u32 pos, bool last);
 
+    virtual void GetSaveData(u8* buffer);
+    virtual u32 GetSaveLen();
+
 protected:
     void ReadROM(u32 addr, u32 len, u8* data, u32 offset);
 
@@ -86,6 +89,9 @@ public:
     virtual int ROMCommandStart(u8* cmd, u8* data, u32 len) override;
 
     virtual u8 SPIWrite(u8 val, u32 pos, bool last) override;
+
+    virtual void GetSaveData(u8* buffer) override;
+    virtual u32 GetSaveLen() override;
 
 protected:
     void ReadROM_B7(u32 addr, u32 len, u8* data, u32 offset);
@@ -212,7 +218,6 @@ extern NDSBanner Banner;
 bool Init();
 void DeInit();
 void Reset();
-void SetupDirectBoot();
 
 void DoSavestate(Savestate* file);
 

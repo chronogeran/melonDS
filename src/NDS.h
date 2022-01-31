@@ -24,6 +24,8 @@
 #include "Savestate.h"
 #include "types.h"
 
+#include "emulibc.h"
+
 // when touching the main loop/timing code, pls test a lot of shit
 // with this enabled, to make sure it doesn't desync
 //#define DEBUG_CHECK_DESYNC

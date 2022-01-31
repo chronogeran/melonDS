@@ -80,6 +80,10 @@ enum ConfigEntry
     Firm_RandomizeMAC,
 
     AudioBitrate,
+
+    UseRealTime,
+    FixedBootTime,
+    TimeAtBoot,
 };
 
 int GetConfigInt(ConfigEntry entry);

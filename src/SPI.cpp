@@ -311,7 +311,15 @@ void LoadUserSettingsFromConfig()
 
 void Reset()
 {
-    if (Firmware) goto skip;
+    if (Firmware)
+    {
+        Hold = 0;
+        CurCmd = 0;
+        Data = 0;
+        StatusReg = 0x00;
+        return;
+    }
+
     if (Firmware) delete[] Firmware;
     Firmware = nullptr;
     FirmwarePath = "";
@@ -412,7 +420,6 @@ void Reset()
     printf("FW: USER0 CRC16 = %s\n", VerifyCRC16(0xFFFF, 0x7FE00&FirmwareMask, 0x70, 0x7FE72&FirmwareMask)?"GOOD":"BAD");
     printf("FW: USER1 CRC16 = %s\n", VerifyCRC16(0xFFFF, 0x7FF00&FirmwareMask, 0x70, 0x7FF72&FirmwareMask)?"GOOD":"BAD");
 
-skip:
     Hold = 0;
     CurCmd = 0;
     Data = 0;
