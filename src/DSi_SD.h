@@ -19,6 +19,8 @@
 #ifndef DSI_SD_H
 #define DSI_SD_H
 
+#include <sstream>
+
 #include <string.h>
 #include "FIFO.h"
 #include "FATStorage.h"
@@ -142,7 +144,8 @@ public:
 
 private:
     bool Internal;
-    FILE* File;
+    //FILE* File;
+    std::stringstream* File;
     FATStorage* SD;
 
     u8 CID[16];

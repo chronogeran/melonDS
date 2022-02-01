@@ -526,7 +526,7 @@ void SetupDirectBoot()
             DSi_NAND::DeInit();
         }
 
-        fclose(nand);
+        //fclose(nand);
     }
 
     u8 nwifiver = SPI_Firmware::GetNWifiVersion();
@@ -699,14 +699,15 @@ bool LoadNAND()
 {
     printf("Loading DSi NAND\n");
 
-    FILE* nand = Platform::OpenLocalFile(Platform::GetConfigString(Platform::DSi_NANDPath), "r+b");
+    //FILE* nand = Platform::OpenLocalFile(Platform::GetConfigString(Platform::DSi_NANDPath), "r+b");
+    std::stringstream* nand = reinterpret_cast<std::stringstream*>(Platform::OpenLocalFile(Platform::GetConfigString(Platform::DSi_NANDPath), "r+b"));
     if (!nand)
     {
         printf("Failed to open DSi NAND\n");
         return false;
     }
 
-    if (!DSi_NAND::Init(nand, &DSi::ARM7iBIOS[0x8308]))
+    if (!DSi_NAND::Init(reinterpret_cast<FILE*>(nand), &DSi::ARM7iBIOS[0x8308]))
     {
         printf("Failed to load DSi NAND\n");
         return false;
@@ -732,8 +733,10 @@ bool LoadNAND()
     memset(NWRAMMask, 0, sizeof(NWRAMMask));
 
     u32 bootparams[8];
-    fseek(nand, 0x220, SEEK_SET);
-    fread(bootparams, 4, 8, nand);
+    //fseek(nand, 0x220, SEEK_SET);
+    //fread(bootparams, 4, 8, nand);
+    nand->seekg(0x220);
+    nand->read((char*)bootparams, 4*8);
 
     printf("ARM9: offset=%08X size=%08X RAM=%08X size_aligned=%08X\n",
            bootparams[0], bootparams[1], bootparams[2], bootparams[3]);
@@ -746,8 +749,10 @@ bool LoadNAND()
     MBK[1][8] = 0;
 
     u32 mbk[12];
-    fseek(nand, 0x380, SEEK_SET);
-    fread(mbk, 4, 12, nand);
+    //fseek(nand, 0x380, SEEK_SET);
+    //fread(mbk, 4, 12, nand);
+    nand->seekg(0x380);
+    nand->read((char*)mbk, 4*12);
 
     MapNWRAM_A(0, mbk[0] & 0xFF);
     MapNWRAM_A(1, (mbk[0] >> 8) & 0xFF);
@@ -801,12 +806,14 @@ bool LoadNAND()
 
     AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-    fseek(nand, bootparams[0], SEEK_SET);
+    //fseek(nand, bootparams[0], SEEK_SET);
+    nand->seekg(bootparams[0]);
     dstaddr = bootparams[2];
     for (u32 i = 0; i < bootparams[3]; i += 16)
     {
         u8 data[16];
-        fread(data, 16, 1, nand);
+        //fread(data, 16, 1, nand);
+        nand->read((char*)data, 16);
 
         for (int j = 0; j < 16; j++) tmp[j] = data[15-j];
         AES_CTR_xcrypt_buffer(&ctx, tmp, 16);
@@ -826,12 +833,14 @@ bool LoadNAND()
 
     AES_init_ctx_iv(&ctx, boot2key, boot2iv);
 
-    fseek(nand, bootparams[4], SEEK_SET);
+    //fseek(nand, bootparams[4], SEEK_SET);
+    nand->seekg(bootparams[4]);
     dstaddr = bootparams[6];
     for (u32 i = 0; i < bootparams[7]; i += 16)
     {
         u8 data[16];
-        fread(data, 16, 1, nand);
+        //fread(data, 16, 1, nand);
+        nand->read((char*)data, 16);
 
         for (int j = 0; j < 16; j++) tmp[j] = data[15-j];
         AES_CTR_xcrypt_buffer(&ctx, tmp, 16);
