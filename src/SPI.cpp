@@ -364,6 +364,8 @@ void Reset()
             userdata += 0x100;
     }
 
+    UserSettings = userdata;
+
     if (firmoverride)
         LoadUserSettingsFromConfig();
 
@@ -379,6 +381,8 @@ void Reset()
 
     // disable autoboot
     //Firmware[userdata+0x64] &= 0xBF;
+
+    *(u16*)&Firmware[userdata+0x72] = CRC16(&Firmware[userdata], 0x70, 0xFFFF);
 
     if (firmoverride)
     {
