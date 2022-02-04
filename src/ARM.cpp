@@ -30,8 +30,6 @@
 #include "ARMJIT_Memory.h"
 #endif
 
-void (*TraceCallback)(u32 cpu, u32* regs, u32 opcode, s64 ccoffset) = NULL;
-
 // instruction timing notes
 //
 // * simple instruction: 1S (code)
@@ -601,8 +599,8 @@ void ARMv5::Execute()
             if (R[15] & 0x2) { NextInstr[1] >>= 16; CodeCycles = 0; }
             else             NextInstr[1] = CodeRead32(R[15], false);
 
-            if (TraceCallback)
-                TraceCallback(Num | 2, R, CurInstr, NDS::GetSysClockCycles(2));
+            MAYBE_CALLBACK(TraceCallback, Num | 2, R, CurInstr);
+            MAYBE_CALLBACK(ExecuteCallback, R[15] - 2);
 
             // actually execute
             u32 icode = (CurInstr >> 6) & 0x3FF;
@@ -616,12 +614,12 @@ void ARMv5::Execute()
             NextInstr[0] = NextInstr[1];
             NextInstr[1] = CodeRead32(R[15], false);
 
+            MAYBE_CALLBACK(TraceCallback, Num, R, CurInstr);
+            MAYBE_CALLBACK(ExecuteCallback, R[15] - 4);
+
             // actually execute
             if (CheckCondition(CurInstr >> 28))
             {
-                if (TraceCallback)
-                    TraceCallback(Num, R, CurInstr, NDS::GetSysClockCycles(2));
-
                 u32 icode = ((CurInstr >> 4) & 0xF) | ((CurInstr >> 16) & 0xFF0);
                 ARMInterpreter::ARMInstrTable[icode](this);
             }
@@ -756,8 +754,8 @@ void ARMv4::Execute()
             NextInstr[0] = NextInstr[1];
             NextInstr[1] = CodeRead16(R[15]);
 
-            if (TraceCallback)
-                TraceCallback(Num | 2, R, CurInstr, NDS::GetSysClockCycles(2));
+            MAYBE_CALLBACK(TraceCallback, Num | 2, R, CurInstr);
+            MAYBE_CALLBACK(ExecuteCallback, R[15] - 2);
 
             // actually execute
             u32 icode = (CurInstr >> 6);
@@ -771,12 +769,12 @@ void ARMv4::Execute()
             NextInstr[0] = NextInstr[1];
             NextInstr[1] = CodeRead32(R[15]);
 
+            MAYBE_CALLBACK(TraceCallback, Num, R, CurInstr);
+            MAYBE_CALLBACK(ExecuteCallback, R[15] - 4);
+
             // actually execute
             if (CheckCondition(CurInstr >> 28))
             {
-                if (TraceCallback)
-                    TraceCallback(Num, R, CurInstr, NDS::GetSysClockCycles(2));
-
                 u32 icode = ((CurInstr >> 4) & 0xF) | ((CurInstr >> 16) & 0xFF0);
                 ARMInterpreter::ARMInstrTable[icode](this);
             }

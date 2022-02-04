@@ -1980,6 +1980,8 @@ void debug(u32 param)
 
 u8 ARM9Read8(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if ((addr & 0xFFFFF000) == 0xFFFF0000)
     {
         return *(u8*)&ARM9BIOS[addr & 0xFFF];
@@ -2038,6 +2040,8 @@ u8 ARM9Read8(u32 addr)
 
 u16 ARM9Read16(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if ((addr & 0xFFFFF000) == 0xFFFF0000)
     {
         return *(u16*)&ARM9BIOS[addr & 0xFFF];
@@ -2096,6 +2100,8 @@ u16 ARM9Read16(u32 addr)
 
 u32 ARM9Read32(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if ((addr & 0xFFFFF000) == 0xFFFF0000)
     {
         return *(u32*)&ARM9BIOS[addr & 0xFFF];
@@ -2157,6 +2163,8 @@ u32 ARM9Read32(u32 addr)
 
 void ARM9Write8(u32 addr, u8 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2200,6 +2208,8 @@ void ARM9Write8(u32 addr, u8 val)
 
 void ARM9Write16(u32 addr, u16 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2264,6 +2274,8 @@ void ARM9Write16(u32 addr, u16 val)
 
 void ARM9Write32(u32 addr, u32 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2363,6 +2375,8 @@ bool ARM9GetMemRegion(u32 addr, bool write, MemRegion* region)
 
 u8 ARM7Read8(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if (addr < 0x00004000)
     {
         // TODO: check the boundary? is it 4000 or higher on regular DS?
@@ -2428,6 +2442,8 @@ u8 ARM7Read8(u32 addr)
 
 u16 ARM7Read16(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if (addr < 0x00004000)
     {
         if (ARM7->R[15] >= 0x00004000)
@@ -2491,6 +2507,8 @@ u16 ARM7Read16(u32 addr)
 
 u32 ARM7Read32(u32 addr)
 {
+    MAYBE_CALLBACK(ReadCallback, addr);
+
     if (addr < 0x00004000)
     {
         if (ARM7->R[15] >= 0x00004000)
@@ -2557,6 +2575,8 @@ u32 ARM7Read32(u32 addr)
 
 void ARM7Write8(u32 addr, u8 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2623,6 +2643,8 @@ void ARM7Write8(u32 addr, u8 val)
 
 void ARM7Write16(u32 addr, u16 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2699,6 +2721,8 @@ void ARM7Write16(u32 addr, u16 val)
 
 void ARM7Write32(u32 addr, u32 val)
 {
+    MAYBE_CALLBACK(WriteCallback, addr);
+
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2839,8 +2863,8 @@ u8 ARM9IORead8(u32 addr)
 {
     switch (addr)
     {
-    case 0x04000130: LagFrameFlag = false; return KeyInput & 0xFF;
-    case 0x04000131: LagFrameFlag = false; return (KeyInput >> 8) & 0xFF;
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput & 0xFF;
+    case 0x04000131: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return (KeyInput >> 8) & 0xFF;
     case 0x04000132: return KeyCnt & 0xFF;
     case 0x04000133: return KeyCnt >> 8;
 
@@ -2976,7 +3000,7 @@ u16 ARM9IORead16(u32 addr)
     case 0x0400010C: return TimerGetCounter(3);
     case 0x0400010E: return Timers[3].Cnt;
 
-    case 0x04000130: LagFrameFlag = false; return KeyInput & 0xFFFF;
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput & 0xFFFF;
     case 0x04000132: return KeyCnt;
 
     case 0x04000180: return IPCSync9;
@@ -3118,7 +3142,7 @@ u32 ARM9IORead32(u32 addr)
     case 0x04000108: return TimerGetCounter(2) | (Timers[2].Cnt << 16);
     case 0x0400010C: return TimerGetCounter(3) | (Timers[3].Cnt << 16);
 
-    case 0x04000130: LagFrameFlag = false; return (KeyInput & 0xFFFF) | (KeyCnt << 16);
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return (KeyInput & 0xFFFF) | (KeyCnt << 16);
 
     case 0x04000180: return IPCSync9;
     case 0x04000184: return ARM9IORead16(addr);
@@ -3694,14 +3718,14 @@ u8 ARM7IORead8(u32 addr)
 {
     switch (addr)
     {
-    case 0x04000130: return KeyInput & 0xFF;
-    case 0x04000131: return (KeyInput >> 8) & 0xFF;
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput & 0xFF;
+    case 0x04000131: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return (KeyInput >> 8) & 0xFF;
     case 0x04000132: return KeyCnt & 0xFF;
     case 0x04000133: return KeyCnt >> 8;
     case 0x04000134: return RCnt & 0xFF;
     case 0x04000135: return RCnt >> 8;
-    case 0x04000136: return (KeyInput >> 16) & 0xFF;
-    case 0x04000137: return KeyInput >> 24;
+    case 0x04000136: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return (KeyInput >> 16) & 0xFF;
+    case 0x04000137: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput >> 24;
 
     case 0x04000138: return RTC::Read() & 0xFF;
 
@@ -3787,10 +3811,10 @@ u16 ARM7IORead16(u32 addr)
     case 0x0400010C: return TimerGetCounter(7);
     case 0x0400010E: return Timers[7].Cnt;
 
-    case 0x04000130: return KeyInput & 0xFFFF;
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput & 0xFFFF;
     case 0x04000132: return KeyCnt;
     case 0x04000134: return RCnt;
-    case 0x04000136: return KeyInput >> 16;
+    case 0x04000136: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return KeyInput >> 16;
 
     case 0x04000138: return RTC::Read();
 
@@ -3877,7 +3901,7 @@ u32 ARM7IORead32(u32 addr)
     case 0x04000108: return TimerGetCounter(6) | (Timers[6].Cnt << 16);
     case 0x0400010C: return TimerGetCounter(7) | (Timers[7].Cnt << 16);
 
-    case 0x04000130: return (KeyInput & 0xFFFF) | (KeyCnt << 16);
+    case 0x04000130: LagFrameFlag = false; MAYBE_CALLBACK(InputCallback); return (KeyInput & 0xFFFF) | (KeyCnt << 16);
     case 0x04000134: return RCnt | (KeyCnt & 0xFFFF0000);
     case 0x04000138: return RTC::Read();
 

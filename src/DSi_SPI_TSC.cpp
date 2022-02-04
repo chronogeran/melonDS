@@ -178,6 +178,9 @@ void Write(u8 val, u32 hold)
         {
             if (id < 0x0B)
             {
+                NDS::LagFrameFlag = false;
+                MAYBE_CALLBACK(InputCallback);
+
                 // X coordinates
 
                 if (id & 0x01) Data = TouchX >> 8;
@@ -187,6 +190,9 @@ void Write(u8 val, u32 hold)
             }
             else if (id < 0x15)
             {
+                NDS::LagFrameFlag = false;
+                MAYBE_CALLBACK(InputCallback);
+
                 // Y coordinates
 
                 if (id & 0x01) Data = TouchY >> 8;

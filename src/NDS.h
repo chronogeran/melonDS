@@ -26,6 +26,16 @@
 
 #include "emulibc.h"
 
+extern void (*InputCallback)();
+
+extern void (*ReadCallback)(u32);
+extern void (*WriteCallback)(u32);
+extern void (*ExecuteCallback)(u32);
+
+extern void (*TraceCallback)(u32, u32*, u32);
+
+#define MAYBE_CALLBACK(callback, ...) do { if (callback) callback(__VA_ARGS__); } while (0)
+
 // when touching the main loop/timing code, pls test a lot of shit
 // with this enabled, to make sure it doesn't desync
 //#define DEBUG_CHECK_DESYNC
