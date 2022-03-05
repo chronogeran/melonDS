@@ -34,8 +34,6 @@ extern void (*ExecuteCallback)(u32);
 
 extern void (*TraceCallback)(u32, u32*, u32);
 
-extern void (*FrameCallback)();
-
 #define MAYBE_CALLBACK(callback, ...) do { if (callback) callback(__VA_ARGS__); } while (0)
 
 // when touching the main loop/timing code, pls test a lot of shit

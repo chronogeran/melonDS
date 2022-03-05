@@ -38,17 +38,9 @@ void SoftRenderer::StopRenderThread()
     {
         RenderThreadRunning = false;
         Platform::Semaphore_Post(Sema_RenderStart);
-        while (__atomic_load_n(&RenderThreadRendering, __ATOMIC_RELAXED));
-        //Platform::Thread_Wait(RenderThread);
-        //Platform::Thread_Free(RenderThread);
+        Platform::Thread_Wait(RenderThread);
+        Platform::Thread_Free(RenderThread);
     }
-}
-
-std::function<void()> RenderThreadEntryFunc = nullptr;
-
-void RenderThreadEntry()
-{
-    RenderThreadEntryFunc();
 }
 
 void SoftRenderer::SetupRenderThread()
@@ -59,9 +51,7 @@ void SoftRenderer::SetupRenderThread()
         if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
         {
             //RenderThreadRunning = true;
-            //RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
-            RenderThreadEntryFunc = std::bind(&SoftRenderer::RenderThreadFunc, this);
-            FrameCallback = RenderThreadEntry;
+            RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
         }
 
         // otherwise more than one frame can be queued up at once
