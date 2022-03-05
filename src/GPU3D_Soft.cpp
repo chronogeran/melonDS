@@ -24,6 +24,7 @@
 #include "NDS.h"
 #include "GPU.h"
 
+
 namespace GPU3D
 {
 
@@ -32,6 +33,7 @@ void RenderThreadFunc();
 
 void SoftRenderer::StopRenderThread()
 {
+    //if (RenderThreadRunning.load(std::memory_order_relaxed))
     if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         RenderThreadRunning = false;
@@ -1644,26 +1646,20 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
         ScanlineFinalPass(y-1);
 
         if (threaded)
-        {
             Platform::Semaphore_Post(Sema_ScanlineCount);
-        }
     }
 
     ScanlineFinalPass(191);
 
     if (threaded)
-    {
         Platform::Semaphore_Post(Sema_ScanlineCount);
-    }
 }
 
 void SoftRenderer::VCount144()
 {
     //if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
     if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED) && !GPU3D::AbortFrame)
-    {
         Platform::Semaphore_Wait(Sema_RenderDone);
-    }
 }
 
 void SoftRenderer::RenderFrame()
@@ -1724,9 +1720,7 @@ u32* SoftRenderer::GetLine(int line)
     if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         if (line < 192)
-        {
             Platform::Semaphore_Wait(Sema_ScanlineCount);
-        }
     }
 
     return &ColorBuffer[(line * ScanlineWidth) + FirstPixelOffset];
