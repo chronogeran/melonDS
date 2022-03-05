@@ -24,25 +24,19 @@
 #include "NDS.h"
 #include "GPU.h"
 
-extern void (*FrameCallback)();
-
 namespace GPU3D
 {
-
-static bool RenderThreadRunning_;
-static bool RenderThreadRendering_;
 
 void RenderThreadFunc();
 
 
 void SoftRenderer::StopRenderThread()
 {
-    //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-    if (RenderThreadRunning_)
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         RenderThreadRunning = false;
-        //Platform::Semaphore_Post(Sema_RenderStart);
+        Platform::Semaphore_Post(Sema_RenderStart);
+        while (__atomic_load_n(&RenderThreadRendering, __ATOMIC_RELAXED));
         //Platform::Thread_Wait(RenderThread);
         //Platform::Thread_Free(RenderThread);
     }
@@ -60,26 +54,25 @@ void SoftRenderer::SetupRenderThread()
     if (Threaded)
     {
         //if (!RenderThreadRunning.load(std::memory_order_relaxed))
-        __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-        if (!RenderThreadRunning_)
+        if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
         {
-            RenderThreadRunning = true;
+            //RenderThreadRunning = true;
             //RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
             RenderThreadEntryFunc = std::bind(&SoftRenderer::RenderThreadFunc, this);
             FrameCallback = RenderThreadEntry;
         }
 
         // otherwise more than one frame can be queued up at once
-        //Platform::Semaphore_Reset(Sema_RenderStart);
+        Platform::Semaphore_Reset(Sema_RenderStart);
 
-        //if (RenderThreadRendering)
-            //Platform::Semaphore_Wait(Sema_RenderDone);
+        if (RenderThreadRendering)
+            Platform::Semaphore_Wait(Sema_RenderDone);
 
-        //Platform::Semaphore_Reset(Sema_RenderDone);
-        //Platform::Semaphore_Reset(Sema_RenderStart);
-        //Platform::Semaphore_Reset(Sema_ScanlineCount);
+        Platform::Semaphore_Reset(Sema_RenderDone);
+        Platform::Semaphore_Reset(Sema_RenderStart);
+        Platform::Semaphore_Reset(Sema_ScanlineCount);
 
-        //Platform::Semaphore_Post(Sema_RenderStart);
+        Platform::Semaphore_Post(Sema_RenderStart);
     }
     else
     {
@@ -96,9 +89,9 @@ SoftRenderer::SoftRenderer()
 
 bool SoftRenderer::Init()
 {
-    //Sema_RenderStart = Platform::Semaphore_Create();
-    //Sema_RenderDone = Platform::Semaphore_Create();
-    //Sema_ScanlineCount = Platform::Semaphore_Create();
+    Sema_RenderStart = Platform::Semaphore_Create();
+    Sema_RenderDone = Platform::Semaphore_Create();
+    Sema_ScanlineCount = Platform::Semaphore_Create();
 
     Threaded = false;
     RenderThreadRunning = false;
@@ -109,11 +102,12 @@ bool SoftRenderer::Init()
 
 void SoftRenderer::DeInit()
 {
+    abort();
     StopRenderThread();
 
-    //Platform::Semaphore_Free(Sema_RenderStart);
-    //Platform::Semaphore_Free(Sema_RenderDone);
-    //Platform::Semaphore_Free(Sema_ScanlineCount);
+    Platform::Semaphore_Free(Sema_RenderStart);
+    Platform::Semaphore_Free(Sema_RenderDone);
+    Platform::Semaphore_Free(Sema_ScanlineCount);
 }
 
 void SoftRenderer::Reset()
@@ -1651,7 +1645,7 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
 
         if (threaded)
         {
-            //Platform::Semaphore_Post(Sema_ScanlineCount);
+            Platform::Semaphore_Post(Sema_ScanlineCount);
         }
     }
 
@@ -1659,17 +1653,16 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
 
     if (threaded)
     {
-        //Platform::Semaphore_Post(Sema_ScanlineCount);
+        Platform::Semaphore_Post(Sema_ScanlineCount);
     }
 }
 
 void SoftRenderer::VCount144()
 {
     //if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
-    __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-    if (RenderThreadRunning_ && !GPU3D::AbortFrame)
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED) && !GPU3D::AbortFrame)
     {
-        //Platform::Semaphore_Wait(Sema_RenderDone);
+        Platform::Semaphore_Wait(Sema_RenderDone);
     }
 }
 
@@ -1684,10 +1677,9 @@ void SoftRenderer::RenderFrame()
     FrameIdentical = !(textureChanged || texPalChanged) && RenderFrameIdentical;
 
     //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-    if (RenderThreadRunning_)
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
-        //Platform::Semaphore_Post(Sema_RenderStart);
+        Platform::Semaphore_Post(Sema_RenderStart);
     }
     else if (!FrameIdentical)
     {
@@ -1703,15 +1695,17 @@ void SoftRenderer::RestartFrame()
 
 void SoftRenderer::RenderThreadFunc()
 {
+    RenderThreadRunning = true;
+
     for (;;)
     {
-        //Platform::Semaphore_Wait(Sema_RenderStart);
+        Platform::Semaphore_Wait(Sema_RenderStart);
         if (!RenderThreadRunning) return;
 
         RenderThreadRendering = true;
         if (FrameIdentical)
         {
-            //Platform::Semaphore_Post(Sema_ScanlineCount, 192);
+            Platform::Semaphore_Post(Sema_ScanlineCount, 192);
         }
         else
         {
@@ -1719,7 +1713,7 @@ void SoftRenderer::RenderThreadFunc()
             RenderPolygons(true, &RenderPolygonRAM[0], RenderNumPolygons);
         }
 
-        //Platform::Semaphore_Post(Sema_RenderDone);
+        Platform::Semaphore_Post(Sema_RenderDone);
         RenderThreadRendering = false;
     }
 }
@@ -1727,12 +1721,11 @@ void SoftRenderer::RenderThreadFunc()
 u32* SoftRenderer::GetLine(int line)
 {
     //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-    if (RenderThreadRunning_)
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         if (line < 192)
         {
-            //Platform::Semaphore_Wait(Sema_ScanlineCount);
+            Platform::Semaphore_Wait(Sema_ScanlineCount);
         }
     }
 
