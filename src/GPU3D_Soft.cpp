@@ -24,6 +24,7 @@
 #include "NDS.h"
 #include "GPU.h"
 
+extern void (*FrameCallback)();
 
 namespace GPU3D
 {
@@ -47,7 +48,6 @@ void SoftRenderer::StopRenderThread()
     }
 }
 
-extern void (*FrameCallback)();
 std::function<void()> RenderThreadEntryFunc = nullptr;
 
 void RenderThreadEntry()
