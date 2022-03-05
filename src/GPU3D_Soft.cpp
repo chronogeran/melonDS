@@ -61,7 +61,7 @@ void SoftRenderer::SetupRenderThread()
     {
         //if (!RenderThreadRunning.load(std::memory_order_relaxed))
         __atomic_load(&RenderThreadRunning, &RenderThreadRunning_, __ATOMIC_RELAXED);
-        if (RenderThreadRunning_)
+        if (!RenderThreadRunning_)
         {
             RenderThreadRunning = true;
             //RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
