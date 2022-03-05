@@ -48,6 +48,12 @@ void SoftRenderer::StopRenderThread()
 }
 
 extern void (*FrameCallback)();
+std::function<void()> RenderThreadEntryFunc = nullptr;
+
+void RenderThreadEntry()
+{
+    RenderThreadEntryFunc();
+}
 
 void SoftRenderer::SetupRenderThread()
 {
@@ -59,7 +65,8 @@ void SoftRenderer::SetupRenderThread()
         {
             RenderThreadRunning = true;
             //RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
-            FrameCallback = std::bind(&SoftRenderer::RenderThreadFunc, this);
+            RenderThreadEntryFunc = std::bind(&SoftRenderer::RenderThreadFunc, this);
+            FrameCallback = RenderThreadEntry;
         }
 
         // otherwise more than one frame can be queued up at once
