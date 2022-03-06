@@ -24,7 +24,6 @@
 #include "NDS.h"
 #include "GPU.h"
 
-
 namespace GPU3D
 {
 
@@ -33,7 +32,8 @@ void RenderThreadFunc();
 
 void SoftRenderer::StopRenderThread()
 {
-    if (RenderThreadRunning.load(std::memory_order_relaxed))
+    //if (RenderThreadRunning.load(std::memory_order_relaxed))
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         RenderThreadRunning = false;
         Platform::Semaphore_Post(Sema_RenderStart);
@@ -46,9 +46,10 @@ void SoftRenderer::SetupRenderThread()
 {
     if (Threaded)
     {
-        if (!RenderThreadRunning.load(std::memory_order_relaxed))
+        //if (!RenderThreadRunning.load(std::memory_order_relaxed))
+        if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
         {
-            RenderThreadRunning = true;
+            //RenderThreadRunning = true;
             RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
         }
 
@@ -1644,7 +1645,8 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
 
 void SoftRenderer::VCount144()
 {
-    if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
+    //if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED) && !GPU3D::AbortFrame)
         Platform::Semaphore_Wait(Sema_RenderDone);
 }
 
@@ -1658,7 +1660,8 @@ void SoftRenderer::RenderFrame()
 
     FrameIdentical = !(textureChanged || texPalChanged) && RenderFrameIdentical;
 
-    if (RenderThreadRunning.load(std::memory_order_relaxed))
+    //if (RenderThreadRunning.load(std::memory_order_relaxed))
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         Platform::Semaphore_Post(Sema_RenderStart);
     }
@@ -1676,6 +1679,8 @@ void SoftRenderer::RestartFrame()
 
 void SoftRenderer::RenderThreadFunc()
 {
+    RenderThreadRunning = true;
+
     for (;;)
     {
         Platform::Semaphore_Wait(Sema_RenderStart);
@@ -1699,7 +1704,8 @@ void SoftRenderer::RenderThreadFunc()
 
 u32* SoftRenderer::GetLine(int line)
 {
-    if (RenderThreadRunning.load(std::memory_order_relaxed))
+    //if (RenderThreadRunning.load(std::memory_order_relaxed))
+    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
         if (line < 192)
             Platform::Semaphore_Wait(Sema_ScanlineCount);
