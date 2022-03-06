@@ -415,6 +415,8 @@ void EmuThread::run()
     double frameLimitError = 0.0;
     double lastMeasureTime = lastTime;
 
+    u32 winUpdateCount = 0, winUpdateFreq = 1;
+
     char melontitle[100];
 
     while (EmuRunning != 0)
@@ -501,7 +503,7 @@ void EmuThread::run()
             micProcess();
 
             // auto screen layout
-            if (Config::ScreenSizing == 3)
+            if (Config::ScreenSizing == screenSizing_Auto)
             {
                 mainScreenPos[2] = mainScreenPos[1];
                 mainScreenPos[1] = mainScreenPos[0];
@@ -513,14 +515,14 @@ void EmuThread::run()
                 {
                     // constant flickering, likely displaying 3D on both screens
                     // TODO: when both screens are used for 2D only...???
-                    guess = 0;
+                    guess = screenSizing_Even;
                 }
                 else
                 {
                     if (mainScreenPos[0] == 1)
-                        guess = 1;
+                        guess = screenSizing_EmphTop;
                     else
-                        guess = 2;
+                        guess = screenSizing_EmphBot;
                 }
 
                 if (guess != autoScreenSizing)
@@ -571,11 +573,16 @@ void EmuThread::run()
 
             if (EmuRunning == 0) break;
 
-            emit windowUpdate();
+            winUpdateCount++;
+            if (winUpdateCount >= winUpdateFreq)
+            {
+                emit windowUpdate();
+                winUpdateCount = 0;
+            }
 
             bool fastforward = Input::HotkeyDown(HK_FastForward);
 
-            if (Config::AudioSync && (!fastforward) && audioDevice)
+            if (Config::AudioSync && !fastforward && audioDevice)
             {
                 SDL_LockMutex(audioSyncLock);
                 while (SPU::GetOutputSize() > 1024)
@@ -623,6 +630,10 @@ void EmuThread::run()
                 nframes = 0;
 
                 float fpstarget = 1.0/frametimeStep;
+
+                winUpdateFreq = fps / (u32)round(fpstarget);
+                if (winUpdateFreq < 1)
+                    winUpdateFreq = 1;
 
                 sprintf(melontitle, "[%d/%.0f] melonDS " MELONDS_VERSION, fps, fpstarget);
                 changeWindowTitle(melontitle);
@@ -1546,7 +1557,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
             const char* screensizing[] = {"Even", "Emphasize top", "Emphasize bottom", "Auto", "Top only", "Bottom only"};
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < screenSizing_MAX; i++)
             {
                 actScreenSizing[i] = submenu->addAction(QString(screensizing[i]));
                 actScreenSizing[i]->setActionGroup(grpScreenSizing);
@@ -2766,6 +2777,22 @@ void MainWindow::onChangeScreenSwap(bool checked)
 {
     Config::ScreenSwap = checked?1:0;
 
+    // Swap between top and bottom screen when displaying one screen. 
+    if (Config::ScreenSizing == screenSizing_TopOnly)
+    {
+        // Bottom Screen.
+        Config::ScreenSizing = screenSizing_BotOnly;
+        actScreenSizing[screenSizing_TopOnly]->setChecked(false);
+        actScreenSizing[Config::ScreenSizing]->setChecked(true);
+    }
+    else if (Config::ScreenSizing == screenSizing_BotOnly)
+    {
+        // Top Screen.
+        Config::ScreenSizing = screenSizing_TopOnly;
+        actScreenSizing[screenSizing_BotOnly]->setChecked(false);
+        actScreenSizing[Config::ScreenSizing]->setChecked(true);
+    }
+    
     emit screenLayoutChange();
 }
 
@@ -2989,7 +3016,7 @@ int main(int argc, char** argv)
     SANITIZE(Config::ScreenRotation, 0, 3);
     SANITIZE(Config::ScreenGap, 0, 500);
     SANITIZE(Config::ScreenLayout, 0, 3);
-    SANITIZE(Config::ScreenSizing, 0, 5);
+    SANITIZE(Config::ScreenSizing, 0, (int)screenSizing_MAX);
     SANITIZE(Config::ScreenAspectTop, 0, 4);
     SANITIZE(Config::ScreenAspectBot, 0, 4);
 #undef SANITIZE
