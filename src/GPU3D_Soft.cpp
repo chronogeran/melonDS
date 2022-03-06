@@ -74,7 +74,7 @@ void SoftRenderer::StopRenderThread()
     //if (RenderThreadRunning.load(std::memory_order_relaxed))
     if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
-        //RenderThreadRunning = false;
+        RenderThreadRunning = false;
         Platform::Semaphore_Post(Sema_RenderStart);
         Platform::Thread_Wait(RenderThread);
         Platform::Thread_Free(RenderThread);
@@ -88,14 +88,14 @@ void SoftRenderer::SetupRenderThread()
         //if (!RenderThreadRunning.load(std::memory_order_relaxed))
         if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
         {
-            RenderThreadRunning = true;
+            //RenderThreadRunning = true;
             RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
         }
 
         // otherwise more than one frame can be queued up at once
         Platform::Semaphore_Reset(Sema_RenderStart);
 
-        if (RenderThreadRunning)
+        if (RenderThreadRendering)
             Platform::Semaphore_Wait(Sema_RenderDone);
 
         Platform::Semaphore_Reset(Sema_RenderDone);
@@ -1719,10 +1719,12 @@ void SoftRenderer::RestartFrame()
 
 void SoftRenderer::RenderThreadFunc()
 {
-    //for (;;)
-    //{
+    RenderThreadRunning = true;
+
+    for (;;)
+    {
         Platform::Semaphore_Wait(Sema_RenderStart);
-        //if (!RenderThreadRunning) return;
+        if (!RenderThreadRunning) return;
 
         RenderThreadRendering = true;
         if (FrameIdentical)
@@ -1737,7 +1739,7 @@ void SoftRenderer::RenderThreadFunc()
 
         Platform::Semaphore_Post(Sema_RenderDone);
         RenderThreadRendering = false;
-    //}
+    }
 }
 
 u32* SoftRenderer::GetLine(int line)
