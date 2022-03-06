@@ -24,6 +24,44 @@
 #include "NDS.h"
 #include "GPU.h"
 
+#define memcpy memcpy_nostd
+#define memset memset_nostd
+#define swap swap_nostd
+#define min min_nostd
+
+void* memcpy(void* dest, const void* src, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+    {
+        ((u8*)dest)[i] = ((u8*)src)[i];
+    }
+
+    return dest;
+}
+
+void* memset(void* dest, int c, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+    {
+        ((u8*)dest)[i] = c;
+    }
+
+    return dest;
+}
+
+template<typename T>
+void swap(T& t1, T& t2)
+{
+    T temp = t1;
+    t1 = t2;
+    t2 = temp;
+}
+
+template<typename T>
+T min(T t1, T t2)
+{
+	return t1 < t2 ? t1 : t2;
+}
 
 namespace GPU3D
 {
@@ -36,7 +74,7 @@ void SoftRenderer::StopRenderThread()
     //if (RenderThreadRunning.load(std::memory_order_relaxed))
     if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
     {
-        RenderThreadRunning = false;
+        //RenderThreadRunning = false;
         Platform::Semaphore_Post(Sema_RenderStart);
         Platform::Thread_Wait(RenderThread);
         Platform::Thread_Free(RenderThread);
@@ -50,14 +88,14 @@ void SoftRenderer::SetupRenderThread()
         //if (!RenderThreadRunning.load(std::memory_order_relaxed))
         if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
         {
-            //RenderThreadRunning = true;
+            RenderThreadRunning = true;
             RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
         }
 
         // otherwise more than one frame can be queued up at once
         Platform::Semaphore_Reset(Sema_RenderStart);
 
-        if (RenderThreadRendering)
+        if (RenderThreadRunning)
             Platform::Semaphore_Wait(Sema_RenderDone);
 
         Platform::Semaphore_Reset(Sema_RenderDone);
@@ -759,10 +797,10 @@ void SoftRenderer::RenderShadowMaskScanline(RendererPolygon* rp, s32 y)
         rp->SlopeR.EdgeParams_YMajor(&l_edgelen, &l_edgecov);
         rp->SlopeL.EdgeParams_YMajor(&r_edgelen, &r_edgecov);
 
-        std::swap(xstart, xend);
-        std::swap(wl, wr);
-        std::swap(zl, zr);
-        std::swap(l_filledge, r_filledge);
+        /*std::*/swap(xstart, xend);
+        /*std::*/swap(wl, wr);
+        /*std::*/swap(zl, zr);
+        /*std::*/swap(l_filledge, r_filledge);
     }
     else
     {
@@ -979,10 +1017,10 @@ void SoftRenderer::RenderPolygonScanline(RendererPolygon* rp, s32 y)
         rp->SlopeR.EdgeParams_YMajor(&l_edgelen, &l_edgecov);
         rp->SlopeL.EdgeParams_YMajor(&r_edgelen, &r_edgecov);
 
-        std::swap(xstart, xend);
-        std::swap(wl, wr);
-        std::swap(zl, zr);
-        std::swap(l_filledge, r_filledge);
+        /*std::*/swap(xstart, xend);
+        /*std::*/swap(wl, wr);
+        /*std::*/swap(zl, zr);
+        /*std::*/swap(l_filledge, r_filledge);
     }
     else
     {
@@ -1040,7 +1078,7 @@ void SoftRenderer::RenderPolygonScanline(RendererPolygon* rp, s32 y)
         if (xcov == 0x3FF) xcov = 0;
     }
 
-    if (!l_filledge) x = std::min(xlimit, xend-r_edgelen+1);
+    if (!l_filledge) x = /*std::*/min(xlimit, xend-r_edgelen+1);
     else
     for (; x < xlimit; x++)
     {
@@ -1681,12 +1719,10 @@ void SoftRenderer::RestartFrame()
 
 void SoftRenderer::RenderThreadFunc()
 {
-    RenderThreadRunning = true;
-
-    for (;;)
-    {
+    //for (;;)
+    //{
         Platform::Semaphore_Wait(Sema_RenderStart);
-        if (!RenderThreadRunning) return;
+        //if (!RenderThreadRunning) return;
 
         RenderThreadRendering = true;
         if (FrameIdentical)
@@ -1701,7 +1737,7 @@ void SoftRenderer::RenderThreadFunc()
 
         Platform::Semaphore_Post(Sema_RenderDone);
         RenderThreadRendering = false;
-    }
+    //}
 }
 
 u32* SoftRenderer::GetLine(int line)
