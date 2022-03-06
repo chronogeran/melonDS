@@ -69,10 +69,10 @@ s16 InterpCos[0x100];
 s16 InterpCubic[0x100][4];
 
 const u32 OutputBufferSize = 2*2048;
-s16 OutputBackbuffer[2 * OutputBufferSize];
+ECL_INVISIBLE s16 OutputBackbuffer[2 * OutputBufferSize];
 u32 OutputBackbufferWritePosition;
 
-s16 OutputFrontBuffer[2 * OutputBufferSize];
+ECL_INVISIBLE s16 OutputFrontBuffer[2 * OutputBufferSize];
 u32 OutputFrontBufferWritePosition;
 u32 OutputFrontBufferReadPosition;
 
