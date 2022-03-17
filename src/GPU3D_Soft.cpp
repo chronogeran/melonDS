@@ -1677,13 +1677,13 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
         ScanlineFinalPass(y-1);
 
         if (threaded)
-            __atomic_add_fetch(RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
     }
 
     ScanlineFinalPass(191);
 
     if (threaded)
-        __atomic_add_fetch(RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
+        __atomic_add_fetch(&RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
 }
 
 /*void SoftRenderer::VCount144()
