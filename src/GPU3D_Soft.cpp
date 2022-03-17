@@ -1802,7 +1802,7 @@ u32* SoftRenderer::GetLine(int line)
     {
         if (line < 192)
         {
-            while (__atomic_load_n(RenderThreadRendering, __ATOMIC_RELAXED))
+            while (__atomic_load_n(&RenderThreadRendering, __ATOMIC_RELAXED))
             {
                 if (__atomic_load_n(&RenderThreadScanlineCount, __ATOMIC_RELAXED))
                 {
