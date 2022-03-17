@@ -1775,7 +1775,7 @@ void SoftRenderer::RestartFrame()
 
 void SoftRenderer::RenderThreadFunc()
 {
-    __atomic_load_n(&RenderThreadScanlineCount, 0, __ATOMIC_RELAXED);
+    __atomic_store_n(&RenderThreadScanlineCount, 0, __ATOMIC_RELAXED);
     if (!FrameIdentical)
     {
         __atomic_store_n(&RenderThreadRendering, true, __ATOMIC_RELAXED);
