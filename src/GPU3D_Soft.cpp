@@ -31,26 +31,33 @@ namespace GPU3D
 void RenderThreadFunc();
 
 
-void SoftRenderer::StopRenderThread()
+/*void SoftRenderer::StopRenderThread()
 {
-    //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
+    if (RenderThreadRunning.load(std::memory_order_relaxed))
     {
         RenderThreadRunning = false;
         Platform::Semaphore_Post(Sema_RenderStart);
         Platform::Thread_Wait(RenderThread);
         Platform::Thread_Free(RenderThread);
     }
-}
+}*/
 
-void SoftRenderer::SetupRenderThread()
+void SoftRenderer::StopRenderThread()
 {
     if (Threaded)
     {
-        //if (!RenderThreadRunning.load(std::memory_order_relaxed))
-        if (!__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
+        while (__atomic_load_n(&RenderThreadRendering, __ATOMIC_RELAXED));
+        __atomic_store_n(&RenderThreadScanlineCount, 0, __ATOMIC_RELAXED);
+    }
+}
+
+/*void SoftRenderer::SetupRenderThread()
+{
+    if (Threaded)
+    {
+        if (!RenderThreadRunning.load(std::memory_order_relaxed))
         {
-            //RenderThreadRunning = true;
+            RenderThreadRunning = true;
             RenderThread = Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
         }
 
@@ -69,6 +76,15 @@ void SoftRenderer::SetupRenderThread()
     else
     {
         StopRenderThread();
+    }
+}*/
+
+void SoftRenderer::SetupRenderThread()
+{
+    if (Threaded)
+    {
+        Platform::Thread_Create(std::bind(&SoftRenderer::RenderThreadFunc, this));
+        __atomic_store_n(&RenderThreadScanlineCount, 0, __ATOMIC_RELAXED);
     }
 }
 
@@ -109,7 +125,7 @@ void SoftRenderer::Reset()
 
     PrevIsShadowMask = false;
 
-    SetupRenderThread();
+    //SetupRenderThread();
 }
 
 void SoftRenderer::SetRenderSettings(GPU::RenderSettings& settings)
@@ -1618,7 +1634,7 @@ void SoftRenderer::ClearBuffers()
     }
 }
 
-void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
+/*void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
 {
     int j = 0;
     for (int i = 0; i < npolys; i++)
@@ -1642,14 +1658,66 @@ void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
 
     if (threaded)
         Platform::Semaphore_Post(Sema_ScanlineCount);
+}*/
+
+void SoftRenderer::RenderPolygons(bool threaded, Polygon** polygons, int npolys)
+{
+    int j = 0;
+    for (int i = 0; i < npolys; i++)
+    {
+        if (polygons[i]->Degenerate) continue;
+        SetupPolygon(&PolygonList[j++], polygons[i]);
+    }
+
+    RenderScanline(0, j);
+
+    for (s32 y = 1; y < 192; y++)
+    {
+        RenderScanline(y, j);
+        ScanlineFinalPass(y-1);
+
+        if (threaded)
+            __atomic_add_fetch(RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
+    }
+
+    ScanlineFinalPass(191);
+
+    if (threaded)
+        __atomic_add_fetch(RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
 }
+
+/*void SoftRenderer::VCount144()
+{
+    if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
+        Platform::Semaphore_Wait(Sema_RenderDone);
+}*/
 
 void SoftRenderer::VCount144()
 {
-    //if (RenderThreadRunning.load(std::memory_order_relaxed) && !GPU3D::AbortFrame)
-    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED) && !GPU3D::AbortFrame)
-        Platform::Semaphore_Wait(Sema_RenderDone);
+    if (!GPU3D::AbortFrame)
+        StopRenderThread();
 }
+
+/*void SoftRenderer::RenderFrame()
+{
+    auto textureDirty = GPU::VRAMDirty_Texture.DeriveState(GPU::VRAMMap_Texture);
+    auto texPalDirty = GPU::VRAMDirty_TexPal.DeriveState(GPU::VRAMMap_TexPal);
+
+    bool textureChanged = GPU::MakeVRAMFlat_TextureCoherent(textureDirty);
+    bool texPalChanged = GPU::MakeVRAMFlat_TexPalCoherent(texPalDirty);
+
+    FrameIdentical = !(textureChanged || texPalChanged) && RenderFrameIdentical;
+
+    if (RenderThreadRunning.load(std::memory_order_relaxed))
+    {
+        Platform::Semaphore_Post(Sema_RenderStart);
+    }
+    else if (!FrameIdentical)
+    {
+        ClearBuffers();
+        RenderPolygons(false, &RenderPolygonRAM[0], RenderNumPolygons);
+    }
+}*/
 
 void SoftRenderer::RenderFrame()
 {
@@ -1661,10 +1729,9 @@ void SoftRenderer::RenderFrame()
 
     FrameIdentical = !(textureChanged || texPalChanged) && RenderFrameIdentical;
 
-    //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
+    if (Threaded)
     {
-        Platform::Semaphore_Post(Sema_RenderStart);
+        Platform::Thread_Wait(RenderThread); // hijacked as a thread start, consider this "wait for thread start"
     }
     else if (!FrameIdentical)
     {
@@ -1673,15 +1740,18 @@ void SoftRenderer::RenderFrame()
     }
 }
 
-void SoftRenderer::RestartFrame()
+/*void SoftRenderer::RestartFrame()
 {
     SetupRenderThread();
+}*/
+
+void SoftRenderer::RestartFrame()
+{
+    StopRenderThread();
 }
 
-void SoftRenderer::RenderThreadFunc()
+/*void SoftRenderer::RenderThreadFunc()
 {
-    RenderThreadRunning = true;
-
     for (;;)
     {
         Platform::Semaphore_Wait(Sema_RenderStart);
@@ -1701,15 +1771,46 @@ void SoftRenderer::RenderThreadFunc()
         Platform::Semaphore_Post(Sema_RenderDone);
         RenderThreadRendering = false;
     }
+}*/
+
+void SoftRenderer::RenderThreadFunc()
+{
+    __atomic_load_n(&RenderThreadScanlineCount, 0, __ATOMIC_RELAXED);
+    if (!FrameIdentical)
+    {
+        __atomic_store_n(&RenderThreadRendering, true, __ATOMIC_RELAXED);
+        ClearBuffers();
+        RenderPolygons(true, &RenderPolygonRAM[0], RenderNumPolygons);
+        __atomic_store_n(&RenderThreadRendering, false, __ATOMIC_RELAXED);
+    }
 }
 
-u32* SoftRenderer::GetLine(int line)
+/*u32* SoftRenderer::GetLine(int line)
 {
-    //if (RenderThreadRunning.load(std::memory_order_relaxed))
-    if (__atomic_load_n(&RenderThreadRunning, __ATOMIC_RELAXED))
+    if (RenderThreadRunning.load(std::memory_order_relaxed))
     {
         if (line < 192)
             Platform::Semaphore_Wait(Sema_ScanlineCount);
+    }
+
+    return &ColorBuffer[(line * ScanlineWidth) + FirstPixelOffset];
+}*/
+
+u32* SoftRenderer::GetLine(int line)
+{
+    if (Threaded)
+    {
+        if (line < 192)
+        {
+            while (__atomic_load_n(RenderThreadRendering, __ATOMIC_RELAXED))
+            {
+                if (__atomic_load_n(&RenderThreadScanlineCount, __ATOMIC_RELAXED))
+                {
+                    __atomic_sub_fetch(&RenderThreadScanlineCount, 1, __ATOMIC_RELAXED);
+                    break;
+                }
+            }
+        }
     }
 
     return &ColorBuffer[(line * ScanlineWidth) + FirstPixelOffset];
