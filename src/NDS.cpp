@@ -2163,8 +2163,6 @@ u32 ARM9Read32(u32 addr)
 
 void ARM9Write8(u32 addr, u8 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2172,6 +2170,7 @@ void ARM9Write8(u32 addr, u8 val)
         ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u8*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x03000000:
@@ -2181,11 +2180,13 @@ void ARM9Write8(u32 addr, u8 val)
             ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u8*)&SWRAM_ARM9.Mem[addr & SWRAM_ARM9.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
         }
         return;
 
     case 0x04000000:
         ARM9IOWrite8(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x05000000:
@@ -2200,6 +2201,7 @@ void ARM9Write8(u32 addr, u8 val)
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
         GBACart::SRAMWrite(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
     }
 
@@ -2208,8 +2210,6 @@ void ARM9Write8(u32 addr, u8 val)
 
 void ARM9Write16(u32 addr, u16 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2217,6 +2217,7 @@ void ARM9Write16(u32 addr, u16 val)
         ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u16*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x03000000:
@@ -2226,16 +2227,19 @@ void ARM9Write16(u32 addr, u16 val)
             ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u16*)&SWRAM_ARM9.Mem[addr & SWRAM_ARM9.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
         }
         return;
 
     case 0x04000000:
         ARM9IOWrite16(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x05000000:
         if (!(PowerControl9 & ((addr & 0x400) ? (1<<9) : (1<<1)))) return;
         GPU::WritePalette<u16>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x06000000:
@@ -2244,28 +2248,31 @@ void ARM9Write16(u32 addr, u16 val)
 #endif
         switch (addr & 0x00E00000)
         {
-        case 0x00000000: GPU::WriteVRAM_ABG<u16>(addr, val); return;
-        case 0x00200000: GPU::WriteVRAM_BBG<u16>(addr, val); return;
-        case 0x00400000: GPU::WriteVRAM_AOBJ<u16>(addr, val); return;
-        case 0x00600000: GPU::WriteVRAM_BOBJ<u16>(addr, val); return;
-        default: GPU::WriteVRAM_LCDC<u16>(addr, val); return;
+        case 0x00000000: GPU::WriteVRAM_ABG<u16>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00200000: GPU::WriteVRAM_BBG<u16>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00400000: GPU::WriteVRAM_AOBJ<u16>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00600000: GPU::WriteVRAM_BOBJ<u16>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        default: GPU::WriteVRAM_LCDC<u16>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
         }
 
     case 0x07000000:
         if (!(PowerControl9 & ((addr & 0x400) ? (1<<9) : (1<<1)))) return;
         GPU::WriteOAM<u16>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr); 
         return;
 
     case 0x08000000:
     case 0x09000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
         GBACart::ROMWrite(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr); 
         return;
 
     case 0x0A000000:
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
         GBACart::SRAMWrite(addr, val & 0xFF);
         GBACart::SRAMWrite(addr+1, val >> 8);
+        MAYBE_CALLBACK(WriteCallback, addr); 
         return;
     }
 
@@ -2274,8 +2281,6 @@ void ARM9Write16(u32 addr, u16 val)
 
 void ARM9Write32(u32 addr, u32 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF000000)
     {
     case 0x02000000:
@@ -2283,6 +2288,7 @@ void ARM9Write32(u32 addr, u32 val)
         ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u32*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return ;
 
     case 0x03000000:
@@ -2292,16 +2298,19 @@ void ARM9Write32(u32 addr, u32 val)
             ARMJIT::CheckAndInvalidate<0, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u32*)&SWRAM_ARM9.Mem[addr & SWRAM_ARM9.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
         }
         return;
 
     case 0x04000000:
         ARM9IOWrite32(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x05000000:
         if (!(PowerControl9 & ((addr & 0x400) ? (1<<9) : (1<<1)))) return;
         GPU::WritePalette(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x06000000:
@@ -2310,16 +2319,17 @@ void ARM9Write32(u32 addr, u32 val)
 #endif
         switch (addr & 0x00E00000)
         {
-        case 0x00000000: GPU::WriteVRAM_ABG<u32>(addr, val); return;
-        case 0x00200000: GPU::WriteVRAM_BBG<u32>(addr, val); return;
-        case 0x00400000: GPU::WriteVRAM_AOBJ<u32>(addr, val); return;
-        case 0x00600000: GPU::WriteVRAM_BOBJ<u32>(addr, val); return;
-        default: GPU::WriteVRAM_LCDC<u32>(addr, val); return;
+        case 0x00000000: GPU::WriteVRAM_ABG<u32>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00200000: GPU::WriteVRAM_BBG<u32>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00400000: GPU::WriteVRAM_AOBJ<u32>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        case 0x00600000: GPU::WriteVRAM_BOBJ<u32>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
+        default: GPU::WriteVRAM_LCDC<u32>(addr, val); MAYBE_CALLBACK(WriteCallback, addr); return;
         }
 
     case 0x07000000:
         if (!(PowerControl9 & ((addr & 0x400) ? (1<<9) : (1<<1)))) return;
         GPU::WriteOAM<u32>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x08000000:
@@ -2327,6 +2337,7 @@ void ARM9Write32(u32 addr, u32 val)
         if (ExMemCnt[0] & (1<<7)) return; // deselected CPU, skip the write
         GBACart::ROMWrite(addr, val & 0xFFFF);
         GBACart::ROMWrite(addr+2, val >> 16);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x0A000000:
@@ -2335,6 +2346,7 @@ void ARM9Write32(u32 addr, u32 val)
         GBACart::SRAMWrite(addr+1, (val >> 8) & 0xFF);
         GBACart::SRAMWrite(addr+2, (val >> 16) & 0xFF);
         GBACart::SRAMWrite(addr+3, val >> 24);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
     }
 
@@ -2575,8 +2587,6 @@ u32 ARM7Read32(u32 addr)
 
 void ARM7Write8(u32 addr, u8 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2585,6 +2595,7 @@ void ARM7Write8(u32 addr, u8 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u8*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x03000000:
@@ -2594,6 +2605,7 @@ void ARM7Write8(u32 addr, u8 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u8*)&SWRAM_ARM7.Mem[addr & SWRAM_ARM7.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
         else
@@ -2602,6 +2614,7 @@ void ARM7Write8(u32 addr, u8 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
             *(u8*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
 
@@ -2610,10 +2623,12 @@ void ARM7Write8(u32 addr, u8 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
         *(u8*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x04000000:
         ARM7IOWrite8(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x06000000:
@@ -2622,6 +2637,7 @@ void ARM7Write8(u32 addr, u8 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_VWRAM>(addr);
 #endif
         GPU::WriteVRAM_ARM7<u8>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x08000000:
@@ -2634,6 +2650,7 @@ void ARM7Write8(u32 addr, u8 val)
     case 0x0A800000:
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
         GBACart::SRAMWrite(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
     }
 
@@ -2643,8 +2660,6 @@ void ARM7Write8(u32 addr, u8 val)
 
 void ARM7Write16(u32 addr, u16 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2653,6 +2668,7 @@ void ARM7Write16(u32 addr, u16 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u16*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x03000000:
@@ -2662,6 +2678,7 @@ void ARM7Write16(u32 addr, u16 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u16*)&SWRAM_ARM7.Mem[addr & SWRAM_ARM7.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
         else
@@ -2670,6 +2687,7 @@ void ARM7Write16(u32 addr, u16 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
             *(u16*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
 
@@ -2678,10 +2696,12 @@ void ARM7Write16(u32 addr, u16 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
         *(u16*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x04000000:
         ARM7IOWrite16(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x04800000:
@@ -2698,6 +2718,7 @@ void ARM7Write16(u32 addr, u16 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_VWRAM>(addr);
 #endif
         GPU::WriteVRAM_ARM7<u16>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x08000000:
@@ -2706,6 +2727,7 @@ void ARM7Write16(u32 addr, u16 val)
     case 0x09800000:
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
         GBACart::ROMWrite(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x0A000000:
@@ -2713,6 +2735,7 @@ void ARM7Write16(u32 addr, u16 val)
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
         GBACart::SRAMWrite(addr, val & 0xFF);
         GBACart::SRAMWrite(addr+1, val >> 8);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
     }
 
@@ -2721,8 +2744,6 @@ void ARM7Write16(u32 addr, u16 val)
 
 void ARM7Write32(u32 addr, u32 val)
 {
-    MAYBE_CALLBACK(WriteCallback, addr);
-
     switch (addr & 0xFF800000)
     {
     case 0x02000000:
@@ -2731,6 +2752,7 @@ void ARM7Write32(u32 addr, u32 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_MainRAM>(addr);
 #endif
         *(u32*)&MainRAM[addr & MainRAMMask] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x03000000:
@@ -2740,6 +2762,7 @@ void ARM7Write32(u32 addr, u32 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_SharedWRAM>(addr);
 #endif
             *(u32*)&SWRAM_ARM7.Mem[addr & SWRAM_ARM7.Mask] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
         else
@@ -2748,6 +2771,7 @@ void ARM7Write32(u32 addr, u32 val)
             ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
             *(u32*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+            MAYBE_CALLBACK(WriteCallback, addr);
             return;
         }
 
@@ -2756,10 +2780,12 @@ void ARM7Write32(u32 addr, u32 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_WRAM7>(addr);
 #endif
         *(u32*)&ARM7WRAM[addr & (ARM7WRAMSize - 1)] = val;
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x04000000:
         ARM7IOWrite32(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x04800000:
@@ -2777,6 +2803,7 @@ void ARM7Write32(u32 addr, u32 val)
         ARMJIT::CheckAndInvalidate<1, ARMJIT_Memory::memregion_VWRAM>(addr);
 #endif
         GPU::WriteVRAM_ARM7<u32>(addr, val);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x08000000:
@@ -2786,6 +2813,7 @@ void ARM7Write32(u32 addr, u32 val)
         if (!(ExMemCnt[0] & (1<<7))) return; // deselected CPU, skip the write
         GBACart::ROMWrite(addr, val & 0xFFFF);
         GBACart::ROMWrite(addr+2, val >> 16);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
 
     case 0x0A000000:
@@ -2795,6 +2823,7 @@ void ARM7Write32(u32 addr, u32 val)
         GBACart::SRAMWrite(addr+1, (val >> 8) & 0xFF);
         GBACart::SRAMWrite(addr+2, (val >> 16) & 0xFF);
         GBACart::SRAMWrite(addr+3, val >> 24);
+        MAYBE_CALLBACK(WriteCallback, addr);
         return;
     }
 
